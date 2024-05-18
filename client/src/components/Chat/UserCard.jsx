@@ -37,7 +37,7 @@ const UserCard = ({ chat, user }) => {
     <>
       <Stack
         direction="horizontal"
-        gap={3}
+        gap={2}
         className="user-card align-items-center p-2 justify-content-between"
         role="button"
         onClick={() => {
@@ -51,7 +51,7 @@ const UserCard = ({ chat, user }) => {
       >
         <div className="d-flex">
           <div className="me-2">
-            <img src={avarter} alt="person-circle" height="35px" />
+            <img src={avarter} alt="person-circle" className="h-12"/>
           </div>
           <div className="text-content">
             <div className="name">{recipientUser?.name}</div>

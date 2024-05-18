@@ -21,6 +21,7 @@ const gettingMessages = async (req, res, next) => {
 
   try {
     const messages = await getMessages(chatId);
+    messages.sort((a, b) => a.createdAt - b.createdAt);
     res.status(200).json(messages);
   } catch (error) {
     next(error)

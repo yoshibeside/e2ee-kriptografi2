@@ -8,21 +8,25 @@ import NavBar from "./components/NavBar";
 import { ChatContextProvider } from "./context/ChatContext";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
+import { ConContextProvider } from "./context/ConContext";
 
 function App() {
   const { user } = useContext(AuthContext);
+
   return (
-    <ChatContextProvider user={user}>
-      <NavBar />
-      <Container className="text-secondary">
-        <Routes>
-          <Route path="/" element={user ? <Chat /> : <Login />} />
-          <Route path="/register" element={user ? <Chat /> : <Register />} />
-          <Route path="/login" element={user ? <Chat /> : <Login />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Container>
-    </ChatContextProvider>
+    <ConContextProvider>
+      <ChatContextProvider user={user}>
+        <NavBar />
+        <Container className="text-secondary">
+          <Routes>
+            <Route path="/" element={user ? <Chat /> : <Login />} />
+            <Route path="/register" element={user ? <Chat /> : <Register />} />
+            <Route path="/login" element={user ? <Chat /> : <Login />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Container>
+      </ChatContextProvider>
+    </ConContextProvider>
   );
 }
 

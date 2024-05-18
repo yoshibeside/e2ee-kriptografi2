@@ -66,7 +66,7 @@ const ChatBox = () => {
           borderColor="rgba(72, 112, 223, 0.2)"
         />
         <button
-          className="send-btn"
+          className="send-btn flex justify-center"
           onClick={() =>{
             sendTextMessage(textMessage, user, currentChat._id, setTextMessage)}
           }

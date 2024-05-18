@@ -1,4 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 body {
   font-family: "Nunito", sans-serif;
@@ -30,7 +33,7 @@ body {
 }
 
 .user-card .text-content {
-  width: 170px;
+  width: 150px;
 }
 
 .user-card .name {
@@ -116,6 +119,7 @@ body {
   height: 40px;
   width: 40px;
   border-radius: 50%;
+  align-items: center;
 }
 
 /* Notification */
