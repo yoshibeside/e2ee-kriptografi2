@@ -23,6 +23,11 @@ export const ChatContextProvider = ({ children, user }) => {
   const [allUsers, setAllUsers] = useState([]);
   const {socket} = useContext(ConContext)
 
+  const [showModal, setShowModal] = useState({bool:false, sender: null, receiver: null});
+
+  // create a state model for the private, public, and partner's public key in each chat id
+  const [keys, setKeys] = useState([])
+  
   // set online users
   useEffect(() => {
     if (socket === null) return;
@@ -87,8 +92,17 @@ export const ChatContextProvider = ({ children, user }) => {
       }
 
       setMessages(response);
+
+      if (!currentChat) return;
+      if (keys.find((k) => k.chatId === currentChat?._id)) {
+        return
+      } else {
+        setShowModal({bool:true, sender: user._id, receiver: currentChat.members.find((m) => m !== user._id)})
+      }
     };
+
     getMessages();
+
   }, [currentChat]);
 
   useEffect(() => {
@@ -148,6 +162,11 @@ export const ChatContextProvider = ({ children, user }) => {
     setCurrentChat(chat);
   }, []);
 
+  const addKey = useCallback(async (privateKey, publicKey, partnerPublicKey) => {
+    setKeys((prev) => [...prev, {chatId: currentChat._id, privateKey, publicKey, partnerPublicKey}])
+    setShowModal({bool: false, sender: null, receiver: null})
+  }, [])
+
   const sendTextMessage = useCallback(
     async (textMessage, sender, currentChatId, setTextMessage) => {
       if (!textMessage) return console.log("You must type something...");
@@ -183,7 +202,10 @@ export const ChatContextProvider = ({ children, user }) => {
       return console.log("Error creating chat:", response);
     }
 
+    setShowModal(false)
+
     setUserChats((prev) => [...prev, response]);
+    setCurrentChat(response);
   }, []);
 
   const markAllNotificationsAsRead = useCallback((notifications) => {
@@ -265,6 +287,8 @@ export const ChatContextProvider = ({ children, user }) => {
         markNotificationAsRead,
         markThisUserNotificationsAsRead,
         newMessage,
+        showModal,
+        addKey
       }}
     >
       {children}

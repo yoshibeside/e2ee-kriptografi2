@@ -5,6 +5,7 @@ import ChatBox from "../components/Chat/ChatBox";
 import UserCard from "../components/Chat/UserCard";
 import { AuthContext } from "../context/AuthContext";
 import { ChatContext } from "../context/ChatContext";
+import ModalKey from "../components/ModalKey";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
@@ -14,6 +15,7 @@ const Chat = () => {
 
   return (
     <Container>
+      <ModalKey/>     
       <AllUsers />
       {userChats?.length < 1 ? null : (
         <Stack direction="horizontal" gap={4} className="align-items-start">
@@ -23,7 +25,7 @@ const Chat = () => {
               (!userChats?.length === 0 && <p>No Chats..</p>)}
             {userChats?.map((chat, index) => {
               return (
-                <div key={index} onClick={() => {console.log("this is in update"); updateCurrentChat(chat)}}>
+                <div key={index} onClick={() => {updateCurrentChat(chat)}}>
                   <UserCard chat={chat} user={user} />
                 </div>
               );

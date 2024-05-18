@@ -12,11 +12,10 @@ const AllUsers = () => {
       <div className="all-users">
         {potentialChats &&
           potentialChats.map((receiver, index) => (
-            <>
             <div
               className="single-user"
               key={index}
-              onClick={() => {createChat(user._id, receiver._id)}}
+              onClick={() => {createChat(user._id, receiver._id);}}
             >
               {receiver.name}
               <span
@@ -27,8 +26,6 @@ const AllUsers = () => {
                 }
               ></span>
             </div>
-            </>
-            
           ))}
       </div>
     </>
