@@ -3,13 +3,12 @@ import { Container, Nav, Navbar, Stack } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import Notifications from "./Chat/Notifications";
-import { ECC } from "../lib/ecc";
+import ecc from "../lib/ecc.js";
 
 const NavBar = () => {
   const { user, logoutUser } = useContext(AuthContext);
 
   const generateNewKeys = () => {
-    const ecc = new ECC();
     const eccKeys = ecc.generateKeys();
 
     downloadKey(

@@ -3,7 +3,7 @@ import { createContext } from "react";
 import { baseUrl, getRequest, postRequest } from "../utils/service";
 import { io } from "socket.io-client";
 import { ConContext } from "./ConContext";
-import { ECC } from "../lib/ecc";
+import ECC from "../lib/ecc.js";
 
 export const ChatContext = createContext();
 
@@ -177,7 +177,17 @@ export const ChatContextProvider = ({ children, user }) => {
       { chatId: currentChat._id, privateKey, partnerPublicKey },
     ]);
     setShowModal({ bool: false, sender: null, receiver: null });
-  }, []);
+  });
+
+  useEffect(() => {
+    console.log("the current chat", currentChat)
+  }, [currentChat])
+
+
+  useEffect(() => {
+    if (keys.length === 0) return
+    console.log(keys)
+  }, [keys])
 
   const sendTextMessage = useCallback(
     async (textMessage, sender, currentChatId, setTextMessage) => {
@@ -186,9 +196,8 @@ export const ChatContextProvider = ({ children, user }) => {
       // Encrypt message here
       console.log(keys, "keys");
       const messageBigInt = messageToBigInt(textMessage);
-      const ecc = new ECC();
-      const encryptedPoint = ecc.scalarMult(messageBigInt, ecc.G);
-      const encryptedMessage = ecc.scalarMult(
+      const encryptedPoint = ECC.scalarMult(messageBigInt, ECC.G);
+      const encryptedMessage = ECC.scalarMult(
         keys[0].privateKey,
         encryptedPoint
       );

@@ -1,4 +1,4 @@
-export class ECC {
+class ECC {
   constructor() {
     this.p = BigInt(
       "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff"
@@ -29,8 +29,14 @@ export class ECC {
   modInv(a, m) {
     const m0 = m;
     let [x0, x1] = [0n, 1n];
-    if (m === 1n) return 0n;
-
+    if (m === 1n) return 0;
+  
+    // Handle negative a
+    a = a % m;
+    if (a < 0n) {
+      a += m;
+    }
+  
     while (a > 1n) {
       const q = a / m;
       [a, m] = [m, a % m];
@@ -85,6 +91,22 @@ export class ECC {
     return result;
   }
 
+  generatePrivate() {
+    let privateKey;
+    do {
+      privateKey = BigInt('0x' + crypto.getRandomValues(new Uint8Array(32)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''));
+    } while (privateKey >= this.n || privateKey === 0n);
+    return privateKey;
+  }
+
+  generatePublic(privateKey) {
+    return this.scalarMult(privateKey, this.G);
+  }
+
+  generateSharedKey(privateKey, publicKey) {
+    return this.scalarMult(privateKey, publicKey);
+  }
+
   generateKeys() {
     const privateKey =
       BigInt(
@@ -97,3 +119,5 @@ export class ECC {
     return { privateKey, publicKey };
   }
 }
+
+export default new ECC();
