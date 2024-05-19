@@ -28,21 +28,21 @@ export class ECC {
 
   modInv(a, m) {
     const m0 = m;
-    let [x0, x1] = [0, 1];
-    if (m === 1) return 0;
+    let [x0, x1] = [0n, 1n];
+    if (m === 1n) return 0n;
 
-    while (a > 1) {
-      const q = Math.floor(a / m);
+    while (a > 1n) {
+      const q = a / m;
       [a, m] = [m, a % m];
       [x0, x1] = [x1 - q * x0, x0];
     }
-    return x1 < 0 ? x1 + m0 : x1;
+    return x1 < 0n ? x1 + m0 : x1;
   }
 
   isOnCurve(point) {
     if (!point) return true;
     const [x, y] = point;
-    return this.mod(y ** 2 - (x ** 3 + this.a * x + this.b), this.p) === 0;
+    return this.mod(y ** 2n - (x ** 3n + this.a * x + this.b), this.p) === 0;
   }
 
   pointAdd(point1, point2) {
@@ -57,14 +57,14 @@ export class ECC {
     let m;
     if (x1 === x2) {
       m = this.mod(
-        (3 * x1 ** 2 + this.a) * this.modInv(2 * y1, this.p),
+        (3n * x1 ** 2n + this.a) * this.modInv(2n * y1, this.p),
         this.p
       );
     } else {
       m = this.mod((y2 - y1) * this.modInv(x2 - x1, this.p), this.p);
     }
 
-    const x3 = this.mod(m ** 2 - x1 - x2, this.p);
+    const x3 = this.mod(m ** 2n - x1 - x2, this.p);
     const y3 = this.mod(m * (x1 - x3) - y1, this.p);
     return [x3, y3];
   }
@@ -73,13 +73,13 @@ export class ECC {
     let result = null;
     let addend = point;
 
-    while (k) {
-      if (k & 1) {
+    while (k > 0n) {
+      if (k & 1n) {
         result = this.pointAdd(result, addend);
       }
 
       addend = this.pointAdd(addend, addend);
-      k >>= 1;
+      k >>= 1n;
     }
 
     return result;
