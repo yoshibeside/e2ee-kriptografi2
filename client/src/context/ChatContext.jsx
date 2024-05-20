@@ -194,7 +194,6 @@ export const ChatContextProvider = ({ children, user }) => {
       if (!textMessage) return console.log("You must type something...");
 
       // Encrypt message here
-      console.log(keys, "keys");
       const messageBigInt = messageToBigInt(textMessage);
       const encryptedPoint = ECC.scalarMult(messageBigInt, ECC.G);
       const encryptedMessage = ECC.scalarMult(
@@ -207,7 +206,7 @@ export const ChatContextProvider = ({ children, user }) => {
         JSON.stringify({
           chatId: currentChatId,
           senderId: sender._id,
-          text: encryptedMessage,
+          text: [encryptedMessage[0].toString(), encryptedMessage[1].toString()]
         })
       );
 
@@ -219,7 +218,7 @@ export const ChatContextProvider = ({ children, user }) => {
       setMessages((prev) => [...prev, response]);
       setTextMessage("");
     },
-    []
+    [keys]
   );
 
   const createChat = useCallback(async (senderId, receiverId) => {
