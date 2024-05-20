@@ -3,16 +3,19 @@ import { executeMode } from "../lib/blockmodes";
 
 const encrypt = (data) => {
   const content = data.toString();
-  const key = localStorage.getItem("sharedKeyW")
+  const key = localStorage.getItem("sharedKeyW").toString();
   const encrypted = executeMode("ecb", content, key, false, true, false);
   return encrypted;
 }
 
 const decrypt = (data) => {
-  const content = data.toString();
-  const joinedKey = localStorage.getItem("sharedKey").join("");
-  const decrypted = executeMode("EBC", content, joinedKey, false, false, true);
-  return decrypted
+  try {
+    const key = localStorage.getItem("sharedKeyW").toString();
+    const decrypted = executeMode("ecb", data, key, true, false, true);
+    return JSON.parse(decrypted);
+  } catch (error) {
+    console.log("Error decrypting data:");
+  }
 }
 
 export const postRequestUnEncrypt = async (url, body) => {
@@ -69,16 +72,21 @@ export const postRequest = async (url, body) => {
     return { error: true, status: response.status, message };
   }
 
+  if (data.encrypted) {
+    const decrypted = decrypt(data.encrypted);
+    return decrypted;
+  }
+
   return data;
 };
 
 export const getRequest = async (url) => {
-  
   const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "authorization": `Bearer ${localStorage.getItem("Token")}`
+      "authorization": `Bearer ${localStorage.getItem("Token")}`,
+      "con_id": localStorage.getItem("con_id")
     },
   });
 
@@ -92,6 +100,11 @@ export const getRequest = async (url) => {
     }
 
     return { error: true, status: response.status, message };
+  }
+
+  if (data.encrypted) {
+    const decrypted = decrypt(data.encrypted);
+    return decrypted;
   }
 
   return data;
@@ -119,6 +132,11 @@ export const deleteRequest = async (url) => {
     }
 
     return { error: true, status: response.status, message };
+  }
+
+  if (data.encrypted) {
+    const decrypted = decrypt(data.encrypted);
+    return decrypted;
   }
 
   return data;

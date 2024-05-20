@@ -1,4 +1,5 @@
 import {createMessage, getMessages}  from '../lib/firebase.js';
+import encryptResponse from '../lib/encryptresponse.js';
 
 const creatingMessage = async (req, res, next) => {
   const { chatId, senderId, text } = req.body;
@@ -8,7 +9,9 @@ const creatingMessage = async (req, res, next) => {
 
   try {
     const response = await createMessage({chatId, senderId, text, createdAt: new Date()});
-    res.status(200).json(response);
+
+    const encrypt = encryptResponse(req.body.shared, response)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }
@@ -22,7 +25,9 @@ const gettingMessages = async (req, res, next) => {
   try {
     const messages = await getMessages(chatId);
     messages.sort((a, b) => a.createdAt - b.createdAt);
-    res.status(200).json(messages);
+
+    const encrypt = encryptResponse(req.body.shared, messages)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }

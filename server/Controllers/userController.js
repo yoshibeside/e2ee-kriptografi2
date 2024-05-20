@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import validator from "validator";
 import {getAllUsers, getEmail, createUser, findUserByID} from '../lib/firebase.js';
+import encryptResponse from '../lib/encryptresponse.js';
 
 const createToken = (_id) => {
   const jwtSecretKey = process.env.JWT_SECRET_KEY;
@@ -34,7 +35,8 @@ const registerUser = async (req, res, next) => {
 
     const token = createToken(user_newid);
 
-    res.status(200).json({ _id: user_newid, name, email, token });
+    const encrypt = encryptResponse(req.body.shared, { _id: user_newid, name, email, token })
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }
@@ -54,7 +56,9 @@ const loginUser = async (req, res, next) => {
 
     const token = createToken(user.id);
 
-    res.status(200).json({ _id: user.id, name: user.name, email, token });
+    const encrypt = encryptResponse(req.body.shared, { _id: user.id, name: user.name, email, token })
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
+    
   } catch (error) {
     next(error)
   }
@@ -65,7 +69,9 @@ const findUser = async (req, res, next) => {
 
   try {
     const user = await findUserByID(userId);
-    res.status(200).json(user);
+
+    const encrypt = encryptResponse(req.body.shared, user)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }
@@ -74,7 +80,9 @@ const findUser = async (req, res, next) => {
 const getUsers = async (req, res, next) => {
   try {
     const users = await getAllUsers();
-    res.status(200).json(users);
+
+    const encrypt = encryptResponse(req.body.shared, users)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }

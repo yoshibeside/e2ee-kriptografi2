@@ -233,7 +233,6 @@ export const ChatContextProvider = ({ children, user }) => {
     }
 
     setUserChats((prev) => [...prev, response]);
-    setCurrentChat(response);
   }, []);
 
   const markAllNotificationsAsRead = useCallback((notifications) => {

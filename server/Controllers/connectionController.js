@@ -9,17 +9,20 @@ export class Connections {
 
 export function middlewarecon (connections) {
     return async (req, res, next) => {
-        const { con_id, encrypted } = req.body;
+        let { con_id, encrypted } = req.body;
+        if (!con_id) con_id = req.headers.con_id;
         try {
             const connection = connections.find((user) => {return user.con_id === con_id});
-            if (req.method === "GET") {
+            if (req.method === "GET" && connection) {
+                req.body.shared = connection.sharedKey;
                 return next();
             }
             if (connection) {
                 // decrypt the message
                 const key = connection.sharedKey;
                 const body = executeMode("ecb", encrypted, key, true, false, true);
-                req.body = JSON.parse(body);              
+                req.body = JSON.parse(body);    
+                req.body.shared = connection.sharedKey;          
                 next();
             } else {
                 res.status(404).json("Connection not found")
