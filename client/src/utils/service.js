@@ -64,9 +64,9 @@ export const postRequest = async (url, body) => {
     let message;
 
     if (data?.message) {
-      message = data.message;
+      message = decrypt(data.message)
     } else {
-      message = data;
+      message = decrypt(data);
     }
 
     return { error: true, status: response.status, message };
@@ -96,7 +96,7 @@ export const getRequest = async (url) => {
     let message = "An error occured...";
 
     if (data?.message) {
-      message = data.message;
+      message = decrypt(data.message)
     }
 
     return { error: true, status: response.status, message };
@@ -128,7 +128,9 @@ export const deleteRequest = async (url) => {
     let message = "An error occured...";
 
     if (data?.message) {
-      message = data.message;
+      message = decrypt(data.message)
+    } else {
+      message = decrypt(data);
     }
 
     return { error: true, status: response.status, message };

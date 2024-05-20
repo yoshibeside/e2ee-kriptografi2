@@ -5,7 +5,7 @@ const creatingMessage = async (req, res, next) => {
   const { chatId, senderId, text } = req.body;
 
   if (!chatId || !senderId || !text)
-    return res.status(400).json("All fields are required...");
+    return res.status(400).json(encryptResponse(req.body.shared, "All fields are required..."));
 
   try {
     const response = await createMessage({chatId, senderId, text, createdAt: new Date()});
@@ -20,7 +20,7 @@ const creatingMessage = async (req, res, next) => {
 const gettingMessages = async (req, res, next) => {
   const { chatId } = req.params;
 
-  if (!chatId) return res.status(400).json("ChatId is required...");
+  if (!chatId) return res.status(400).json(encryptResponse(req.body.shared, "ChatId is required..."));
 
   try {
     const messages = await getMessages(chatId);

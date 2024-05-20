@@ -16,17 +16,17 @@ const registerUser = async (req, res, next) => {
   try {
 
     if (!name || !email || !password)
-      return res.status(400).json("All fields are required...");
+      return res.status(400).jsonencryptResponse(req.body.shared, ("All fields are required..."));
 
     if (!validator.isEmail(email))
-      return res.status(400).json("Email must be a valid email...");
+      return res.status(400).json(encryptResponse(req.body.shared, "Email must be a valid email..."));
 
     if (!validator.isStrongPassword(password))
-      return res.status(400).json("Password must be a strong password (Include Capital, small letter, number and special character)");
+      return res.status(400).json(encryptResponse(req.body.shared, "Password must be a strong password (Include Capital, small letter, number and special character)"));
 
     const user = await getEmail(email);
 
-    if (user) return res.status(400).json("User already exists...");
+    if (user) return res.status(400).json(encryptResponse(req.body.shared, "User already exists..."));
 
     const salt = await bcrypt.genSalt(10);
     const pass_hash = await bcrypt.hash(password, salt);
@@ -48,11 +48,11 @@ const loginUser = async (req, res, next) => {
   try {
     let user = await getEmail(email);
 
-    if (!user) return res.status(400).json("Invalid email or password...");
+    if (!user) return res.status(400).json(encryptResponse(req.body.shared, "Invalid email or password..."));
 
     const validPassword = await bcrypt.compare(password, user.pass_hash);
     if (!validPassword)
-      return res.status(400).json("Invalid email or password...");
+      return res.status(400).json(encryptResponse(req.body.shared, "Invalid email or password..."));
 
     const token = createToken(user.id);
 
