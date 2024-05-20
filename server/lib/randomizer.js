@@ -165,3 +165,78 @@ export const keccak256 = (inputBytes) => {
 // Example usage
 /* const message = new TextEncoder().encode("halo");
 const digest = keccak256(message); */
+
+/* 
+Cryptographically Secure Pseudorandom Generator (CSPRNG)
+with Blum Blum Shub 
+*/
+
+const gcd = (a, b) => {
+  while (b) {
+    [a, b] = [b, a % b];
+  }
+  return a;
+};
+
+const isPrime = (num) => {
+  if (num <= 1) return false;
+  for (let i = 2, sqrt = Math.sqrt(num); i <= sqrt; i++) {
+    if (num % i === 0) return false;
+  }
+  return true;
+};
+
+const isCongruent = (num) => {
+  if (BigInt(num) % 4n === 3n) {
+    return true;
+  }
+
+  return false;
+};
+
+const initializeSeed = (n) => {
+  while (true) {
+    const seed = BigInt(Math.floor(Math.random() * Number(n - 2n)) + 2);
+    if (gcd(Number(seed), Number(n)) === 1) {
+      return seed;
+    }
+  }
+};
+
+const bbs = (seed, n, iterations) => {
+  let x = (seed * seed) % n; // x0 = s^2 mod n
+  const result = [];
+  for (let i = 0; i < iterations; i++) {
+    x = (x * x) % n; // xi+1 = xi^2 mod n
+    result.push(Number(x & 1n)); // Extract the least significant bit
+  }
+  return result;
+};
+
+export const pseudorandomGenerator = ({ p, q, seed, iterations }) => {
+  if (!isPrime(p) || !isPrime(q)) {
+    return false;
+  }
+  if (!isCongruent(p) || !isCongruent(q)) {
+    return false;
+  }
+
+  const n = BigInt(p * q);
+
+  // if seed is not supplied, generate random seed
+  const seedValue = BigInt(seed || initializeSeed(n));
+  const randomBits = bbs(seedValue, n, iterations);
+
+  return randomBits.join("");
+};
+
+// Example usage
+/* const result = pseudorandomGenerator({
+  p: 11,
+  q: 23,
+  seed: 3,
+  iterations: 5,
+});
+
+console.log(result);
+ */
