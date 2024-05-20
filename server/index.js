@@ -6,6 +6,7 @@ import userRoute from "./Routes/userRoute.js";
 import errorhandler from "./Middleware/errorhandler.js";
 import authenticate from "./Middleware/authenticate.js";
 import {initializeFirebaseApp} from './lib/firebase.js';
+import {middlewarecon, makeConnection, deleteConnection, Connections} from "./Controllers/connectionController.js";
 
 
 const app = express();
@@ -14,9 +15,14 @@ app.use(express.json());
 initializeFirebaseApp();
 app.use(cors());
 
-app.use("/api/users", userRoute);
-app.use("/api/chats", chatRoute);
-app.use("/api/messages", messageRoute);
+const connections = new Connections();
+
+app.post("/api/connections", makeConnection(connections.onlineUsers));
+app.delete("/api/connections", deleteConnection(connections.onlineUsers));
+
+app.use("/api/users", middlewarecon(connections.onlineUsers), userRoute);
+app.use("/api/chats",authenticate, middlewarecon(connections.onlineUsers), chatRoute);
+app.use("/api/messages",authenticate, middlewarecon(connections.onlineUsers), messageRoute);
 
 app.get("/", (req, res) => {
   res.send("Welcome to our chat API...");

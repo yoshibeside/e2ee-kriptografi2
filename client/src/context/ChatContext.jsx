@@ -3,6 +3,7 @@ import { createContext } from "react";
 import { baseUrl, getRequest, postRequest } from "../utils/service";
 import { io } from "socket.io-client";
 import { ConContext } from "./ConContext";
+import ECC from "../lib/ecc.js";
 
 export const ChatContext = createContext();
 
@@ -21,13 +22,17 @@ export const ChatContextProvider = ({ children, user }) => {
   const [potentialChats, setPotentialChats] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
-  const {socket} = useContext(ConContext)
+  const { socket } = useContext(ConContext);
 
-  const [showModal, setShowModal] = useState({bool:false, sender: null, receiver: null});
+  const [showModal, setShowModal] = useState({
+    bool: false,
+    sender: null,
+    receiver: null,
+  });
 
   // create a state model for the private, public, and partner's public key in each chat id
-  const [keys, setKeys] = useState([])
-  
+  const [keys, setKeys] = useState([]);
+
   // set online users
   useEffect(() => {
     if (socket === null) return;
@@ -95,14 +100,17 @@ export const ChatContextProvider = ({ children, user }) => {
 
       if (!currentChat) return;
       if (keys.find((k) => k.chatId === currentChat?._id)) {
-        return
+        return;
       } else {
-        setShowModal({bool:true, sender: user._id, receiver: currentChat.members.find((m) => m !== user._id)})
+        setShowModal({
+          bool: true,
+          sender: user._id,
+          receiver: currentChat.members.find((m) => m !== user._id),
+        });
       }
     };
 
     getMessages();
-
   }, [currentChat]);
 
   useEffect(() => {
@@ -162,22 +170,44 @@ export const ChatContextProvider = ({ children, user }) => {
     setCurrentChat(chat);
   }, []);
 
-  const addKey = useCallback(async (privateKey, publicKey, partnerPublicKey) => {
-    setKeys((prev) => [...prev, {chatId: currentChat._id, privateKey, publicKey, partnerPublicKey}])
-    setShowModal({bool: false, sender: null, receiver: null})
-  }, [])
+  const addKey = useCallback((privateKey, partnerPublicKey, currentChat) => {
+    console.log(privateKey, "key");
+    setKeys((prev) => [
+      ...prev,
+      { chatId: currentChat._id, privateKey, partnerPublicKey },
+    ]);
+    setShowModal({ bool: false, sender: null, receiver: null });
+  });
+
+  useEffect(() => {
+    console.log("the current chat", currentChat)
+  }, [currentChat])
+
+
+  useEffect(() => {
+    if (keys.length === 0) return
+    console.log(keys)
+  }, [keys])
 
   const sendTextMessage = useCallback(
     async (textMessage, sender, currentChatId, setTextMessage) => {
       if (!textMessage) return console.log("You must type something...");
 
+      // Encrypt message here
+      console.log(keys, "keys");
+      const messageBigInt = messageToBigInt(textMessage);
+      const encryptedPoint = ECC.scalarMult(messageBigInt, ECC.G);
+      const encryptedMessage = ECC.scalarMult(
+        keys[0].privateKey,
+        encryptedPoint
+      );
 
       const response = await postRequest(
         `${baseUrl}/messages`,
         JSON.stringify({
           chatId: currentChatId,
           senderId: sender._id,
-          text: textMessage,
+          text: encryptedMessage,
         })
       );
 
@@ -202,10 +232,7 @@ export const ChatContextProvider = ({ children, user }) => {
       return console.log("Error creating chat:", response);
     }
 
-    setShowModal(false)
-
     setUserChats((prev) => [...prev, response]);
-    setCurrentChat(response);
   }, []);
 
   const markAllNotificationsAsRead = useCallback((notifications) => {
@@ -266,6 +293,25 @@ export const ChatContextProvider = ({ children, user }) => {
     []
   );
 
+  const messageToBigInt = (message) => {
+    const encoder = new TextEncoder();
+    const messageBytes = encoder.encode(message);
+    let hexString = "";
+    messageBytes.forEach((byte) => {
+      hexString += byte.toString(16).padStart(2, "0");
+    });
+    return BigInt(`0x${hexString}`);
+  };
+
+  const bigIntToMessage = (bigInt) => {
+    const hexString = bigInt.toString(16);
+    const messageBytes = new Uint8Array(
+      hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
+    );
+    const decoder = new TextDecoder();
+    return decoder.decode(messageBytes);
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -288,7 +334,7 @@ export const ChatContextProvider = ({ children, user }) => {
         markThisUserNotificationsAsRead,
         newMessage,
         showModal,
-        addKey
+        addKey,
       }}
     >
       {children}

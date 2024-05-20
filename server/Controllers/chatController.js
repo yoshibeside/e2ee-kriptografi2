@@ -1,4 +1,5 @@
 import {findChat, makeChat, findChats} from '../lib/firebase.js';
+import encryptResponse from '../lib/encryptresponse.js';
 
 const creatingChat = async (req, res, next) => {
   const { senderId, receiverId } = req.body;
@@ -6,11 +7,14 @@ const creatingChat = async (req, res, next) => {
     // check if a chat already exist
     const chat = await findChat(senderId, receiverId);
 
-    if (chat) return res.status(200).json(chat);
+    if (chat) {
+      const encrypt = encryptResponse(req.body.shared, chat)
+      res.status(200).json({encrypted: encrypt, key: req.body.shared});
+    } 
 
     const newChat = await makeChat(senderId, receiverId);
-
-    res.status(200).json(newChat);
+    const encrypt = encryptResponse(req.body.shared, newChat)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }
@@ -21,8 +25,8 @@ const userChats = async (req, res, next) => {
 
   try {
     const chats = await findChats(userId);
-
-    res.status(200).json(chats);
+    const encrypt = encryptResponse(req.body.shared, chats)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }
@@ -35,7 +39,8 @@ const findingChat = async (req, res, next) => {
   try {
     const chat = findChat(firstId, secondId);
 
-    res.status(200).json(chat);
+    const encrypt = encryptResponse(req.body.shared, chat)
+    res.status(200).json({encrypted: encrypt, key: req.body.shared});
   } catch (error) {
     next(error)
   }

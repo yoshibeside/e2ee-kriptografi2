@@ -48,7 +48,7 @@ class ECC {
   isOnCurve(point) {
     if (!point) return true;
     const [x, y] = point;
-    return this.mod(y ** 2n - (x ** 3n + this.a * x + this.b), this.p) === 0;
+    return this.mod(y ** 2n - (x ** 3n + (this.a * x) + this.b), this.p) === 0;
   }
 
   pointAdd(point1, point2) {
@@ -62,12 +62,9 @@ class ECC {
 
     let m;
     if (x1 === x2) {
-      m = this.mod(
-        (3n * x1 ** 2n + this.a) * this.modInv(2n * y1, this.p),
-        this.p
-      );
+      m =this.mod((3n * x1 ** 2n + this.a) * this.modInv(2n * y1, this.p), this.p)
     } else {
-      m = this.mod((y2 - y1) * this.modInv(x2 - x1, this.p), this.p);
+      m = this.mod((y2 - y1) * this.modInv(x2 - x1, this.p), this.p)
     }
 
     const x3 = this.mod(m ** 2n - x1 - x2, this.p);
@@ -75,49 +72,55 @@ class ECC {
     return [x3, y3];
   }
 
+  pointDouble(point) {
+    const [x, y] = point;
+
+    let m = this.mod(((3n*(x**2n) + this.a)*this.modInv(2n*y, this.p)), this.p);
+    const x3 = this.mod(m**2n - 2n*x, this.p);
+    const y3 = this.mod(m*(x - x3) - y, this.p);
+    return [x3, y3];
+  }
+
   scalarMult(k, point) {
     let result = null;
     let addend = point;
 
-    while (k > 0n) {
+    while (k) {
       if (k & 1n) {
         result = this.pointAdd(result, addend);
       }
-
       addend = this.pointAdd(addend, addend);
       k >>= 1n;
     }
-
     return result;
   }
 
-  generatePrivate() {
-    let privateKey;
-    do {
-      privateKey = BigInt('0x' + crypto.getRandomValues(new Uint8Array(32)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''));
-    } while (privateKey >= this.n || privateKey === 0n);
-    return privateKey;
-  }
+    generatePrivate() {
+      let privateKey;
+      do {
+        privateKey = BigInt('0x' + crypto.getRandomValues(new Uint8Array(32)).reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), ''));
+      } while (privateKey >= this.n || privateKey === 0n);
+      return privateKey;
+    }
+  
+    generatePublic(privateKey) {
+      return this.scalarMult(privateKey, this.G);
+    }
+  
+    generateSharedKey(privateKey, publicKey) {
+      return this.scalarMult(privateKey, publicKey);
+    }
+  
+    generateKeys() {
+      const privateKey = this.generatePrivate();
+      const publicKey = this.generatePublic(privateKey);
+      return { privateKey, publicKey };
+    }
 
-  generatePublic(privateKey) {
-    return this.scalarMult(privateKey, this.G);
+    isPrivateKeyValid(privateKey) {
+        return privateKey > 0n && privateKey < this.n;
+    }
   }
-
-  generateSharedKey(privateKey, publicKey) {
-    return this.scalarMult(privateKey, publicKey);
-  }
-
-  generateKeys() {
-    const privateKey =
-      BigInt(
-        `0x${crypto
-          .getRandomValues(new Uint8Array(32))
-          .map((byte) => byte.toString(16).padStart(2, "0"))
-          .join("")}`
-      ) % this.n;
-    const publicKey = this.scalarMult(privateKey, this.G);
-    return { privateKey, publicKey };
-  }
-}
 
 export default new ECC();
+  
