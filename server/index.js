@@ -17,8 +17,8 @@ app.use(cors());
 
 const connections = new Connections();
 
-app.post("/api/connections", makeConnection(connections.onlineUsers));
-app.delete("/api/connections", deleteConnection(connections.onlineUsers));
+app.post("/api/connections/:conId/:pub_key", makeConnection(connections.onlineUsers));
+app.delete("/api/connections/:conId", deleteConnection(connections.onlineUsers));
 
 app.use("/api/users", middlewarecon(connections.onlineUsers), userRoute);
 app.use("/api/chats",authenticate, middlewarecon(connections.onlineUsers), chatRoute);

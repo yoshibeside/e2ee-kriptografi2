@@ -19,13 +19,13 @@ const decrypt = (data) => {
 }
 
 export const postRequestUnEncrypt = async (url, body) => {
+  url = `${url}/${localStorage.getItem("con_id")}/${body.pub_key.toString()}`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "authorization": `Bearer ${localStorage.getItem("Token")}`,
     },
-    body
   });
 
   const data = await response.json();
@@ -48,18 +48,20 @@ export const postRequestUnEncrypt = async (url, body) => {
 export const postRequest = async (url, body) => {
   const con_id = localStorage.getItem("con_id");
   const encryptbody = await encrypt(body);
-
+  url = `${url}/${con_id}`;
+  console.log("this is url", url)
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "authorization": `Bearer ${localStorage.getItem("Token")}`,
     },
-    body: JSON.stringify({con_id, encrypted: encryptbody})
+    body: JSON.stringify({encrypted: encryptbody})
   });
 
   const data = await response.json();
-  
+  console.log(data)
+  console.log("this is the key", localStorage.getItem("sharedKeyW"))
   if (!response.ok) {
     let message;
 
@@ -81,12 +83,12 @@ export const postRequest = async (url, body) => {
 };
 
 export const getRequest = async (url) => {
+  url = `${url}/${localStorage.getItem("con_id")}`;
   const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
       "authorization": `Bearer ${localStorage.getItem("Token")}`,
-      "con_id": localStorage.getItem("con_id")
     },
   });
 
@@ -113,13 +115,13 @@ export const getRequest = async (url) => {
 
 export const deleteRequest = async (url) => {
   const con_id = localStorage.getItem("con_id");
+  url = `${url}/${con_id}`;
   
   const response = await fetch(url, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({con_id})
   });
 
   const data = await response.json();

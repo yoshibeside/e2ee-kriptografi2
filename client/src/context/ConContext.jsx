@@ -20,7 +20,7 @@ export const ConContextProvider = ({ children, user }) => {
         async function makeConnection() {
             // randomize
             const key = ecc.generateKeys();
-            const response = await postRequestUnEncrypt(`${baseUrl}/connections`, JSON.stringify({con_id: id, pub_key: [key.publicKey[0].toString(), key.publicKey[1].toString()]}))
+            const response = await postRequestUnEncrypt(`${baseUrl}/connections`, {pub_key: [key.publicKey[0].toString(), key.publicKey[1].toString()]})
             const public_key = [BigInt(response.pub_key[0]), BigInt(response.pub_key[1])]
             const sharedKey = ecc.scalarMult(key.privateKey, public_key)
             localStorage.setItem("sharedKeyW", sharedKey.join(""))

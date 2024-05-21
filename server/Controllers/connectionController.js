@@ -9,10 +9,10 @@ export class Connections {
 
 export function middlewarecon (connections) {
     return async (req, res, next) => {
-        let { con_id, encrypted } = req.body;
-        if (!con_id) con_id = req.headers.con_id;
+        const  conId  = req.originalUrl.split("/").pop();
+        const { encrypted } = req.body;
         try {
-            const connection = connections.find((user) => {return user.con_id === con_id});
+            const connection = connections.find((user) => {return user.con_id === conId});
             if (req.method === "GET" && connection) {
                 req.body.shared = connection.sharedKey;
                 return next();
@@ -36,13 +36,14 @@ export function middlewarecon (connections) {
 
 export function makeConnection(connections) {
     return async (req, res, next) => {
-        const { con_id, pub_key } = req.body;
+        const { conId, pub_key } = req.params;
+        const temp_key = pub_key.split(",");
         try {
-            if (!connections.find((user) => { user.con_id === con_id})) {
+            if (!connections.find((user) => { user.con_id === conId})) {
                 const generateKey = ecc.generateKeys();
-                let sharedKey = ecc.generateSharedKey(generateKey.privateKey, [BigInt(pub_key[0]), BigInt(pub_key[1])]);
+                let sharedKey = ecc.generateSharedKey(generateKey.privateKey, [BigInt(temp_key[0]), BigInt(temp_key[1])]);
                 sharedKey = sharedKey.join("")
-                connections.push({con_id, sharedKey});
+                connections.push({con_id: conId, sharedKey});
                 res.status(200).json({pub_key: [generateKey.publicKey[0].toString(), generateKey.publicKey[1].toString()]})
             } 
         } catch (error) {
@@ -53,9 +54,9 @@ export function makeConnection(connections) {
 
 export function deleteConnection(connections) {
     return async (req, res, next) => {
-        const { con_id } = req.body;
+        const { conId } = req.params;
         try {
-            const index = connections.findIndex((user) => {return user.con_id === con_id});
+            const index = connections.findIndex((user) => {return user.con_id === conId});
             if (index !== -1) {
                 connections.splice(index, 1);
                 res.status(200).json("Connection deleted")

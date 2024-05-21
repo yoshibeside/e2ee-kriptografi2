@@ -7,8 +7,8 @@ import {
 
 const router = express.Router();
 
-router.post("/", creatingChat);
-router.get("/:userId", userChats);
-router.get("/find/:firstId/:secondId", findingChat);
+router.post("/:conId", creatingChat);
+router.get("/:userId/:conId", userChats);
+router.get("/find/:firstId/:secondId/:conId", findingChat);
 
 export default router;
