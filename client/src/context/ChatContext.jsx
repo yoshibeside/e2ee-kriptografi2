@@ -83,9 +83,32 @@ export const ChatContextProvider = ({ children, user }) => {
   }, [socket, currentChat]);
 
   useEffect(() => {
-    const getMessages = async () => {
-      setIsMessagesLoading(true);
 
+    const getKeys = async () => {
+      if (!currentChat) return;
+      if (keys.find((k) => k.chatId === currentChat?._id)) {
+        return;
+      } else {
+        setShowModal({
+          bool: true,
+          sender: user._id,
+          receiver: currentChat.members.find((m) => m !== user._id),
+        });
+        setIsMessagesLoading(true);
+      }
+    };
+
+    getKeys();
+  
+  }, [currentChat]);
+
+  useEffect(() => {
+    
+    if (!currentChat) return;
+    if (!(keys.find((k) => k.chatId === currentChat?._id))) return;
+    if (showModal.bool) return;
+
+    const getMessages = async () => {
       const response = await getRequest(
         `${baseUrl}/messages/${currentChat?._id}`
       );
@@ -97,21 +120,10 @@ export const ChatContextProvider = ({ children, user }) => {
       }
 
       setMessages(response);
-
-      if (!currentChat) return;
-      if (keys.find((k) => k.chatId === currentChat?._id)) {
-        return;
-      } else {
-        setShowModal({
-          bool: true,
-          sender: user._id,
-          receiver: currentChat.members.find((m) => m !== user._id),
-        });
-      }
     };
 
     getMessages();
-  }, [currentChat]);
+  }, [currentChat, keys, showModal.bool]);
 
   useEffect(() => {
     const getUsers = async () => {
@@ -171,13 +183,12 @@ export const ChatContextProvider = ({ children, user }) => {
   }, []);
 
   const addKey = useCallback((privateKey, partnerPublicKey, currentChat) => {
-    console.log(privateKey, "key");
     setKeys((prev) => [
       ...prev,
       { chatId: currentChat._id, privateKey, partnerPublicKey },
     ]);
     setShowModal({ bool: false, sender: null, receiver: null });
-  });
+  }, [keys]);
 
   useEffect(() => {
     console.log("the current chat", currentChat)
@@ -206,7 +217,7 @@ export const ChatContextProvider = ({ children, user }) => {
         JSON.stringify({
           chatId: currentChatId,
           senderId: sender._id,
-          text: [encryptedMessage[0].toString(), encryptedMessage[1].toString()]
+          text: [encryptedMessage[0].toString(), encryptedMessage[1].toString()],
         })
       );
 
