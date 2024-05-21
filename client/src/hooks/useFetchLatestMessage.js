@@ -3,7 +3,7 @@ import { ChatContext } from "../context/ChatContext";
 import { baseUrl, getRequest } from "../utils/service";
 
 export const useFecthLatestMessage = (chat) => {
-  const { newMessage, notifications } = useContext(ChatContext);
+  const { newMessage, notifications, keys } = useContext(ChatContext);
   const [latestMessage, setLatestMessage] = useState(null);
 
   useEffect(() => {
@@ -11,15 +11,16 @@ export const useFecthLatestMessage = (chat) => {
       const response = await getRequest(`${baseUrl}/messages/${chat?._id}`);
 
       if (response.error) {
-        return console.log("Error getting messages...", error);
+        return console.log("Error getting messages...", response.error);
       }
 
       const lastMessage = response[response?.length - 1];
 
       setLatestMessage(lastMessage);
     };
+    if (!keys.find((k) => k.chatId === chat?._id)) return;
     getMessages();
-  }, [newMessage, notifications]);
+  }, [newMessage, notifications, keys]);
 
   return { latestMessage };
 };

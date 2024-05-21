@@ -345,6 +345,7 @@ export const ChatContextProvider = ({ children, user }) => {
         newMessage,
         showModal,
         addKey,
+        keys,
       }}
     >
       {children}

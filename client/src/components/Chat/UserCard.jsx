@@ -33,6 +33,26 @@ const UserCard = ({ chat, user }) => {
     return shortText;
   };
 
+  const latestMessageText = () => {
+    if (!latestMessage) return
+    return (
+      <div className="text">
+        {latestMessage?.text && (
+          <span>{truncateText(latestMessage?.text)}</span>
+        )}
+      </div>
+    )
+  }
+
+  const latestMessageDate = () => {
+    if (!latestMessage) return
+    return (
+      <div className="date">
+        {moment(latestMessage?.createdAt).calendar()}
+      </div>
+    )
+  }
+
   return (
     <>
       <Stack
@@ -55,17 +75,11 @@ const UserCard = ({ chat, user }) => {
           </div>
           <div className="text-content">
             <div className="name">{recipientUser?.name}</div>
-            <div className="text">
-              {latestMessage?.text && (
-                <span>{truncateText(latestMessage?.text)}</span>
-              )}
-            </div>
+            {latestMessageText()}
           </div>
         </div>
         <div className="d-flex flex-column align-items-end">
-          <div className="date">
-            {moment(latestMessage?.createdAt).calendar()}
-          </div>
+          {latestMessageDate()}
           <div
             className={
               thisUserNotifications?.length > 0 ? "this-user-notifications" : ""
