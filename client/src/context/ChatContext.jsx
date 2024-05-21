@@ -4,6 +4,7 @@ import { baseUrl, getRequest, postRequest } from "../utils/service";
 import { io } from "socket.io-client";
 import { ConContext } from "./ConContext";
 import ECC from "../lib/ecc.js";
+import { encryptMessage, decryptMessage } from "../lib/ecc_helper.js";
 
 export const ChatContext = createContext();
 
@@ -83,7 +84,6 @@ export const ChatContextProvider = ({ children, user }) => {
   }, [socket, currentChat]);
 
   useEffect(() => {
-
     const getKeys = async () => {
       if (!currentChat) return;
       if (keys.find((k) => k.chatId === currentChat?._id)) {
@@ -99,13 +99,11 @@ export const ChatContextProvider = ({ children, user }) => {
     };
 
     getKeys();
-  
   }, [currentChat]);
 
   useEffect(() => {
-    
     if (!currentChat) return;
-    if (!(keys.find((k) => k.chatId === currentChat?._id))) return;
+    if (!keys.find((k) => k.chatId === currentChat?._id)) return;
     if (showModal.bool) return;
 
     const getMessages = async () => {
@@ -119,7 +117,25 @@ export const ChatContextProvider = ({ children, user }) => {
         return setMessagesError(response.error);
       }
 
-      setMessages(response);
+      const decryptedResponse = response.map((item) => {
+        const encryptedMessageString = item.text;
+        const encryptedChunks = JSON.parse(encryptedMessageString).map(
+          (chunk) => ({
+            kG: chunk.kG.map((coord) => BigInt(`0x${coord}`)),
+            PmPluskPb: chunk.PmPluskPb.map((coord) => BigInt(`0x${coord}`)),
+          })
+        );
+        const decryptedMessage = decryptMessage(
+          keys[0].privateKey,
+          receivedEncryptedChunks
+        );
+        return {
+          ...item,
+          text: decryptedMessage,
+        };
+      });
+
+      setMessages(decryptedResponse);
     };
 
     getMessages();
@@ -182,34 +198,42 @@ export const ChatContextProvider = ({ children, user }) => {
     setCurrentChat(chat);
   }, []);
 
-  const addKey = useCallback((privateKey, partnerPublicKey, currentChat) => {
-    setKeys((prev) => [
-      ...prev,
-      { chatId: currentChat._id, privateKey, partnerPublicKey },
-    ]);
-    setShowModal({ bool: false, sender: null, receiver: null });
+  const addKey = useCallback(
+    (privateKey, partnerPublicKey, currentChat) => {
+      setKeys((prev) => [
+        ...prev,
+        { chatId: currentChat._id, privateKey, partnerPublicKey },
+      ]);
+      setShowModal({ bool: false, sender: null, receiver: null });
+    },
+    [keys]
+  );
+
+  useEffect(() => {
+    console.log("the current chat", currentChat);
+  }, [currentChat]);
+
+  useEffect(() => {
+    if (keys.length === 0) return;
+    console.log(keys);
   }, [keys]);
-
-  useEffect(() => {
-    console.log("the current chat", currentChat)
-  }, [currentChat])
-
-
-  useEffect(() => {
-    if (keys.length === 0) return
-    console.log(keys)
-  }, [keys])
 
   const sendTextMessage = useCallback(
     async (textMessage, sender, currentChatId, setTextMessage) => {
       if (!textMessage) return console.log("You must type something...");
 
       // Encrypt message here
-      const messageBigInt = messageToBigInt(textMessage);
-      const encryptedPoint = ECC.scalarMult(messageBigInt, ECC.G);
-      const encryptedMessage = ECC.scalarMult(
+      const encryptedChunks = encryptMessage(
         keys[0].privateKey,
-        encryptedPoint
+        textMessage,
+        keys[0].partnerPublicKey
+      );
+
+      const encryptedMessageString = JSON.stringify(
+        encryptedChunks.map((chunk) => ({
+          kG: chunk.kG.map((coord) => coord.toString(16)),
+          PmPluskPb: chunk.PmPluskPb.map((coord) => coord.toString(16)),
+        }))
       );
 
       const response = await postRequest(
@@ -217,7 +241,7 @@ export const ChatContextProvider = ({ children, user }) => {
         JSON.stringify({
           chatId: currentChatId,
           senderId: sender._id,
-          text: [encryptedMessage[0].toString(), encryptedMessage[1].toString()],
+          text: encryptedMessageString,
         })
       );
 
@@ -302,25 +326,6 @@ export const ChatContextProvider = ({ children, user }) => {
     },
     []
   );
-
-  const messageToBigInt = (message) => {
-    const encoder = new TextEncoder();
-    const messageBytes = encoder.encode(message);
-    let hexString = "";
-    messageBytes.forEach((byte) => {
-      hexString += byte.toString(16).padStart(2, "0");
-    });
-    return BigInt(`0x${hexString}`);
-  };
-
-  const bigIntToMessage = (bigInt) => {
-    const hexString = bigInt.toString(16);
-    const messageBytes = new Uint8Array(
-      hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16))
-    );
-    const decoder = new TextDecoder();
-    return decoder.decode(messageBytes);
-  };
 
   return (
     <ChatContext.Provider
