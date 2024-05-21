@@ -34,6 +34,22 @@ export const ChatContextProvider = ({ children, user }) => {
   // create a state model for the private, public, and partner's public key in each chat id
   const [keys, setKeys] = useState([]);
 
+  // Helper function to store plain text messages in local storage
+  const storeMessageLocally = (chatId, message, createdAt) => {
+    const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || {};
+    if (!chatHistory[chatId]) {
+      chatHistory[chatId] = [];
+    }
+    chatHistory[chatId].push({ text: message, createdAt });
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  };
+
+  // Fetch plain text messages from local storage
+  const fetchLocalMessages = (chatId) => {
+    const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || {};
+    return chatHistory[chatId] || [];
+  };
+
   // set online users
   useEffect(() => {
     if (socket === null) return;
@@ -64,7 +80,20 @@ export const ChatContextProvider = ({ children, user }) => {
     socket.on("getMessage", (res) => {
       if (currentChat?._id !== res.chatId) return;
 
-      setMessages((prev) => [...prev, res]);
+      const encryptedMessageString = res.text;
+      const encryptedChunks = JSON.parse(encryptedMessageString).map(
+        (chunk) => ({
+          kG: chunk.kG.map((coord) => BigInt(`0x${coord}`)),
+          PmPluskPb: chunk.PmPluskPb.map((coord) => BigInt(`0x${coord}`)),
+        })
+      );
+
+      const decryptedMessage = decryptMessage(
+        keys[0].privateKey,
+        encryptedChunks
+      );
+
+      setMessages((prev) => [...prev, { ...res, text: decryptedMessage }]);
     });
 
     socket.on("getNotification", (res) => {
@@ -81,7 +110,7 @@ export const ChatContextProvider = ({ children, user }) => {
       socket.off("getMessage");
       socket.off("getNotification");
     };
-  }, [socket, currentChat]);
+  }, [socket, currentChat, keys]);
 
   useEffect(() => {
     const getKeys = async () => {
@@ -117,6 +146,7 @@ export const ChatContextProvider = ({ children, user }) => {
         return setMessagesError(response.error);
       }
 
+      const localMessages = fetchLocalMessages(currentChat?._id);
       const decryptedResponse = response.map((item) => {
         const encryptedMessageString = item.text;
         const encryptedChunks = JSON.parse(encryptedMessageString).map(
@@ -127,7 +157,7 @@ export const ChatContextProvider = ({ children, user }) => {
         );
         const decryptedMessage = decryptMessage(
           keys[0].privateKey,
-          receivedEncryptedChunks
+          encryptedChunks
         );
         return {
           ...item,
@@ -135,7 +165,19 @@ export const ChatContextProvider = ({ children, user }) => {
         };
       });
 
-      setMessages(decryptedResponse);
+      // Combine messages and override the text portion if timestamps match
+      const combinedMessages = decryptedResponse.map((message) => {
+        const localMessage = localMessages.find(
+          (local) => local.createdAt === message.createdAt
+        );
+        return localMessage ? { ...message, text: localMessage.text } : message;
+      });
+
+      combinedMessages.sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+
+      setMessages(combinedMessages);
     };
 
     getMessages();
@@ -224,7 +266,6 @@ export const ChatContextProvider = ({ children, user }) => {
 
       // Encrypt message here
       const encryptedChunks = encryptMessage(
-        keys[0].privateKey,
         textMessage,
         keys[0].partnerPublicKey
       );
@@ -249,8 +290,12 @@ export const ChatContextProvider = ({ children, user }) => {
         return setSendTextMessageError(response);
       }
 
+      const { createdAt } = response;
+
+      storeMessageLocally(currentChatId, textMessage, createdAt);
+
       setNewMessage(response);
-      setMessages((prev) => [...prev, response]);
+      setMessages((prev) => [...prev, { ...response, text: textMessage }]);
       setTextMessage("");
     },
     [keys]

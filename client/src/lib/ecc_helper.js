@@ -1,7 +1,7 @@
 import ecc from "./ecc";
 
 // Encrypt function using ECC private key
-export function encryptMessage(privateKey, message, receiverPublicKey) {
+export function encryptMessage(message, receiverPublicKey) {
   const asciiArray = Array.from(message).map((char) => char.charCodeAt(0));
   const groupSize = Math.ceil(Math.log2(Number(ecc.p)) / 8);
   const chunks = [];
