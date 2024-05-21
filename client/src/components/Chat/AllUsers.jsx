@@ -17,7 +17,7 @@ const AllUsers = () => {
               key={index}
               onClick={() => {createChat(user._id, receiver._id);}}
             >
-              {receiver.name}
+              <div className="truncate">{receiver.name}</div>
               <span
                 className={
                   onlineUsers?.some((user) => user?.userId === receiver?._id)
