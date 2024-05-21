@@ -22,7 +22,7 @@ export const ConContextProvider = ({ children, user }) => {
             const key = ecc.generateKeys();
             const response = await postRequestUnEncrypt(`${baseUrl}/connections`, JSON.stringify({con_id: id, pub_key: [key.publicKey[0].toString(), key.publicKey[1].toString()]}))
             const public_key = [BigInt(response.pub_key[0]), BigInt(response.pub_key[1])]
-            const sharedKey = ecc.generateSharedKey(key.privateKey, public_key)
+            const sharedKey = ecc.scalarMult(key.privateKey, public_key)
             localStorage.setItem("sharedKeyW", sharedKey.join(""))
         }
 
@@ -57,7 +57,7 @@ export const ConContextProvider = ({ children, user }) => {
 
         socket.on("receiveB", (data) => {
             const publicKey = [BigInt(data.publicKey[0]), BigInt(data.publicKey[1])]
-            const sharedKey = ecc.generateSharedKey(privateKey, publicKey)
+            const sharedKey = ecc.scalarMult(privateKey, publicKey)
             localStorage.setItem("sharedKey", sharedKey.join(""))
         });
 
