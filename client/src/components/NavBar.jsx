@@ -4,20 +4,41 @@ import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import Notifications from "./Chat/Notifications";
 import ecc from "../lib/ecc.js";
+import schnorr from "../lib/schnorr.js";
+import { baseUrl, getRequest } from "../utils/service.js";
 
 const NavBar = () => {
   const { user, logoutUser } = useContext(AuthContext);
 
-  const generateNewKeys = () => {
+  const generateE2EKeys = () => {
     const eccKeys = ecc.generateKeys();
 
     downloadKey(
       eccKeys.privateKey.toString(16),
-      `${user._id}_ecc_private_key.ecprv`
+      `${user._id}_${user.name}_ecc.ecprv`
     );
     downloadKey(
       JSON.stringify(eccKeys.publicKey.map((k) => k.toString(16))),
-      `${user._id}_ecc_public_key.ecpub`
+      `${user._id}_${user.name}_ecc.ecpub`
+    );
+  };
+
+  const generateSchnorrKeys = async () => {
+    // const response = await getRequest(`${baseUrl}/schnorr/params`);
+
+    // if (response.error) {
+    //   console.log("Failed to fetch Schnorr parameters");
+    // }
+
+    const keys = schnorr.generateKeys();
+
+    downloadKey(
+      keys.privateKey.toString(),
+      `${user._id}_${user.name}_schnorr.scprv`
+    );
+    downloadKey(
+      keys.publicKey.toString(),
+      `${user._id}_${user.name}_schnorr.scpub`
     );
   };
 
@@ -57,8 +78,14 @@ const NavBar = () => {
 
             {user && (
               <>
-                <button className="text-white mr-4" onClick={generateNewKeys}>
+                <button className="text-white mr-4" onClick={generateE2EKeys}>
                   Generate E2E Keys
+                </button>
+                <button
+                  className="text-white mr-4"
+                  onClick={() => generateSchnorrKeys()}
+                >
+                  Generate Schnorr Keys
                 </button>
                 <Notifications />
                 <Link
