@@ -1,8 +1,8 @@
 class SchnorrSignature {
-  constructor(p, q, g) {
-    this.p = p;
-    this.q = q;
-    this.g = g;
+  constructor() {
+    this.p = 100003n;
+    this.q = 2n;
+    this.g = 2n;
   }
 
   mod(n, m) {
@@ -66,3 +66,5 @@ class SchnorrSignature {
     return v === r;
   }
 }
+
+export default new SchnorrSignature();
