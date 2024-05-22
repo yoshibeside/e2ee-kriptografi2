@@ -7,6 +7,7 @@ import errorhandler from "./Middleware/errorhandler.js";
 import authenticate from "./Middleware/authenticate.js";
 import {initializeFirebaseApp} from './lib/firebase.js';
 import {middlewarecon, makeConnection, deleteConnection, Connections} from "./Controllers/connectionController.js";
+import schnorRoute from "./Routes/schnorRoute.js"
 
 
 const app = express();
@@ -23,6 +24,7 @@ app.delete("/api/connections/:conId", deleteConnection(connections.onlineUsers))
 app.use("/api/users", middlewarecon(connections.onlineUsers), userRoute);
 app.use("/api/chats",authenticate, middlewarecon(connections.onlineUsers), chatRoute);
 app.use("/api/messages",authenticate, middlewarecon(connections.onlineUsers), messageRoute);
+app.use("/api/schnorr",authenticate, middlewarecon(connections.onlineUsers), schnorRoute);
 
 app.get("/", (req, res) => {
   res.send("Welcome to our chat API...");
