@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import Notifications from "./Chat/Notifications";
 import ecc from "../lib/ecc.js";
-import schnorr from "../lib/schnorr.js";
-import { baseUrl, getRequest } from "../utils/service.js";
+import { ChatContext } from "../context/ChatContext.jsx";
 
 const NavBar = () => {
   const { user, logoutUser } = useContext(AuthContext);
+  const {Schnorr} = useContext(ChatContext);
 
   const generateE2EKeys = () => {
     const eccKeys = ecc.generateKeys();
@@ -30,7 +30,7 @@ const NavBar = () => {
     //   console.log("Failed to fetch Schnorr parameters");
     // }
 
-    const keys = schnorr.generateKeys();
+    const keys = Schnorr.generateKeys();
 
     downloadKey(
       keys.privateKey.toString(),

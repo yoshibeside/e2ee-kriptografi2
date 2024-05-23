@@ -487,6 +487,7 @@ export const ChatContextProvider = ({ children, user }) => {
         updateMessage,
         verifying,
         verified,
+        Schnorr,
       }}
     >
       {children}
