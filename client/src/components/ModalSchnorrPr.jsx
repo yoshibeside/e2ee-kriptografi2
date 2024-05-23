@@ -78,6 +78,7 @@ const ModalSchnorrPr = () => {
               <Form.Control
                 type="file"
                 id="personalprivatekey"
+                accept=".scprv"
                 onChange={handleFileInput}
               />
             </Stack>

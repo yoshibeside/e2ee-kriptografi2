@@ -80,6 +80,7 @@ const ModalKey = () => {
               <Form.Control
                 type="file"
                 id="myprivatekey"
+                accept=".ecprv"
                 onChange={handleFileInput}
               />
             </Stack>
@@ -88,6 +89,7 @@ const ModalKey = () => {
               <Form.Control
                 type="file"
                 id="partnerpublickey"
+                accept=".ecpub"
                 onChange={handleFileInput}
               />
             </Stack>
