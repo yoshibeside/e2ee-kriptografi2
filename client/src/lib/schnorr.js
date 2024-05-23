@@ -1,8 +1,10 @@
-class SchnorrSignature {
-  constructor() {
-    this.p = 100003n;
-    this.q = 2n;
-    this.g = 2n;
+import { keccak256 } from "./randomizer.js";
+
+export default class SchnorrSignature {
+  constructor(p, q, g) {
+    this.p = p
+    this.q = q
+    this.g = g
   }
 
   mod(n, m) {
@@ -26,9 +28,9 @@ class SchnorrSignature {
   }
 
   hash(input) {
-    const hash = crypto.createHash("sha256");
-    hash.update(input);
-    return BigInt(`0x${hash.digest("hex")}`);
+    const message = new TextEncoder().encode(input);
+    const digest = keccak256(message);
+    return BigInt(`0x${digest}`);
   }
 
   generateKeys() {
@@ -51,7 +53,7 @@ class SchnorrSignature {
           .map((byte) => byte.toString(16).padStart(2, "0"))
           .join("")}`
       ) % this.q;
-    const r = this.modPow(this.g, k, this.p);
+    const r = this.modPow(this.g, k, this.p);  
     const e = this.hash(`${r.toString(16)}${message}`);
     const s = this.mod(k - privateKey * e, this.q);
     return { r, s };
@@ -66,5 +68,3 @@ class SchnorrSignature {
     return v === r;
   }
 }
-
-export default new SchnorrSignature();

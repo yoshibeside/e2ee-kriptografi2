@@ -61,9 +61,6 @@ const Register = () => {
               >
                 {isRegisterLoading ? "Creating your account..." : "Register"}
               </Button>
-
-              <ToastContainer/>
-              
             </Stack>
           </Col>
         </Row>

@@ -6,6 +6,8 @@ import UserCard from "../components/Chat/UserCard";
 import { AuthContext } from "../context/AuthContext";
 import { ChatContext } from "../context/ChatContext";
 import ModalKey from "../components/ModalKey";
+import ModalSchnorr from "../components/ModalSchnorr";
+import ModalSchnorrPr from "../components/ModalSchnorrPr";
 
 const Chat = () => {
   const { user } = useContext(AuthContext);
@@ -16,6 +18,8 @@ const Chat = () => {
   return (
     <Container>
       <ModalKey/>     
+      <ModalSchnorr/>
+      <ModalSchnorrPr/>
       <AllUsers />
       {userChats?.length < 1 ? null : (
         <Stack direction="horizontal" gap={4} className="align-items-start">

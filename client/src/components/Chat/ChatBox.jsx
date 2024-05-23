@@ -11,7 +11,7 @@ import { Tooltip } from "react-tooltip";
 
 const ChatBox = () => {
   const { user } = useContext(AuthContext);
-  const { currentChat, messages, sendTextMessage, isMessagesLoading } =
+  const { currentChat, messages, sendTextMessage, isMessagesLoading, clickVerify, verified, inputSign, updateMessage } =
     useContext(ChatContext);
   const { recipientUser } = useFetchRecipientUser(currentChat, user);
   const [textMessage, setTextMessage] = useState("");
@@ -20,6 +20,36 @@ const ChatBox = () => {
   useEffect(() => {
     scroll.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const getElement = (messageId, text, r, s, senderId) => {
+    if (senderId == user._id) 
+      return (
+        <button 
+          className="message-header text-green-500 hover:text-green-600" 
+          data-tooltip-id="verified-message"
+          data-tooltip-variant="info">
+          Signed
+        </button>
+      ) 
+    if (!verified.find((id) => id==messageId)) 
+    return (
+      <button 
+        className="message-header text-yellow-500 hover:text-yellow-600" 
+        data-tooltip-id="unverified-message"
+        data-tooltip-variant="info"
+        onClick={() => clickVerify(messageId, text, r, s)}>
+        Unverified
+    </button>
+    )
+    return (
+      <button 
+        className="message-header text-green-500 hover:text-green-600" 
+        data-tooltip-id="verified-message"
+        data-tooltip-variant="info">
+        Verified
+      </button>
+    )
+  }
 
   if (!recipientUser)
     return (
@@ -50,12 +80,45 @@ const ChatBox = () => {
               key={index}
               ref={scroll}
             >
+              {message?.signed? (
+                getElement(message._id, message?.text, BigInt(message.signed.r),BigInt( message.signed.s), message?.senderId)
+              ) : null }
+              
               <span>{message.text}</span>
               <span className="message-footer">
                 {moment(message.createdAt).calendar()}
               </span>
             </Stack>
           ))}
+
+          <Tooltip id="unverified-message">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                Verify the message <b>with</b> Schnorr's
+              </span>
+            </div>
+          </Tooltip>
+
+          <Tooltip id="verified-message">
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                Message Verified
+              </span>
+            </div>
+          </Tooltip>
+
       </Stack>
       <Stack direction="horizontal" className="chat-input flex-grow-0" gap={2}>
         <InputEmoji
@@ -67,7 +130,9 @@ const ChatBox = () => {
         <button
           className="send-btn-schnorr flex justify-center"
           onClick={() => {
-            sendTextMessage(textMessage, user, currentChat._id, setTextMessage);
+            updateMessage(textMessage, currentChat._id)
+            setTextMessage("")
+            inputSign()
           }}
           data-tooltip-id="schnorr-send-message"
           data-tooltip-variant="info"

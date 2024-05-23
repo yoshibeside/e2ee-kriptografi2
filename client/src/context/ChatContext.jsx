@@ -1,10 +1,9 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { createContext } from "react";
 import { baseUrl, getRequest, postRequest } from "../utils/service";
-import { io } from "socket.io-client";
 import { ConContext } from "./ConContext";
-import ECC from "../lib/ecc.js";
 import { encryptMessage, decryptMessage } from "../lib/ecc_helper.js";
+import SchnorrSignature from "../lib/schnorr.js";
 
 export const ChatContext = createContext();
 
@@ -23,16 +22,27 @@ export const ChatContextProvider = ({ children, user }) => {
   const [potentialChats, setPotentialChats] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [text, setText] = useState("");
+  const [chatId, setChatId] = useState("");
+  const [signature, setSignature] = useState({r: null, s: null})
   const { socket } = useContext(ConContext);
+  const [Schnorr, setSchnorr] = useState(null);
 
   const [showModal, setShowModal] = useState({
     bool: false,
     sender: null,
     receiver: null,
   });
+  const [showSchnorr, setShowSchnorr] = useState(false);
+  const [showSchnorrPr, setShowSchnorrPr] = useState(false);
+
 
   // create a state model for the private, public, and partner's public key in each chat id
   const [keys, setKeys] = useState([]);
+
+  // create a state model for the private, public, and partner's public key in each chat id
+  const [verified, setVerified] = useState([]);
+  const [idMessage, setIdMessage] = useState("");
 
   // Helper function to store plain text messages in local storage
   const storeMessageLocally = (chatId, message, createdAt) => {
@@ -49,6 +59,22 @@ export const ChatContextProvider = ({ children, user }) => {
     const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || {};
     return chatHistory[chatId] || [];
   };
+
+  useEffect(() => {
+    const getParams = async () => {
+      const response = await getRequest(
+        `${baseUrl}/schnorr/params`
+      );
+
+      if (response.error) {
+        return setMessagesError(response.error);
+      }
+      console.log("loading", response)
+      setSchnorr(new SchnorrSignature(BigInt(response.p), BigInt(response.q), BigInt(response.alpha)));
+    }
+    getParams();
+  }, []);
+
 
   // set online users
   useEffect(() => {
@@ -240,6 +266,46 @@ export const ChatContextProvider = ({ children, user }) => {
     setCurrentChat(chat);
   }, []);
 
+  const inputSign = useCallback(() => {
+    setShowSchnorrPr(true);
+  }, []);
+
+  const sign = useCallback((privateKey) => {
+    if (!privateKey) return
+    const pair = Schnorr.sign(privateKey, text);
+
+    if (!pair) {
+      closeSchnorr();
+      return ("Error signing message")
+    }
+    sendTextMessage(text, user, chatId, setText, (pair.r).toString(), pair.s.toString());
+    closeSchnorr();
+  }, [text, chatId, signature, Schnorr]);
+
+  const closeSchnorr = useCallback(() => {
+    setShowSchnorr(false);
+    setShowSchnorrPr(false);
+  }, []);
+
+  const verifying = useCallback((publicKey) => {
+    if (!text || !{signature} || !publicKey) return;
+    const verified = Schnorr.verify(publicKey, text, signature);
+    if (verified) {
+      setVerified((prev) => [...prev, idMessage]);
+      closeSchnorr();
+    } else {
+      closeSchnorr();
+      return ("Error verifying message")
+    }
+  }, [text, signature, idMessage, Schnorr]);
+
+  const clickVerify = useCallback((idMessage, message, r, s) => {
+    setSignature({r, s});
+    setText(message);
+    setIdMessage(idMessage);
+    setShowSchnorr(true);
+  }, []);
+
   const addKey = useCallback(
     (privateKey, partnerPublicKey, currentChat) => {
       setKeys((prev) => [
@@ -260,8 +326,13 @@ export const ChatContextProvider = ({ children, user }) => {
     console.log(keys);
   }, [keys]);
 
+  const updateMessage = useCallback((textMessage, id)=> {
+    setText(textMessage);
+    setChatId(id);
+  }, []);
+
   const sendTextMessage = useCallback(
-    async (textMessage, sender, currentChatId, setTextMessage) => {
+    async (textMessage, sender, currentChatId, setTextMessage, r, s) => {
       if (!textMessage) return console.log("You must type something...");
 
       // Encrypt message here
@@ -276,14 +347,25 @@ export const ChatContextProvider = ({ children, user }) => {
           PmPluskPb: chunk.PmPluskPb.map((coord) => coord.toString(16)),
         }))
       );
-
-      const response = await postRequest(
-        `${baseUrl}/messages`,
-        JSON.stringify({
+      let body = {}
+      if (r && s) {
+        body = {
           chatId: currentChatId,
           senderId: sender._id,
           text: encryptedMessageString,
-        })
+          signed: {r, s}
+        }
+      } else {
+        body = {
+          chatId: currentChatId,
+          senderId: sender._id,
+          text: encryptedMessageString,
+        }
+      }
+
+      const response = await postRequest(
+        `${baseUrl}/messages`,
+        JSON.stringify(body)
       );
 
       if (response.error) {
@@ -396,6 +478,15 @@ export const ChatContextProvider = ({ children, user }) => {
         showModal,
         addKey,
         keys,
+        clickVerify,
+        showSchnorr,
+        showSchnorrPr,
+        closeSchnorr,
+        inputSign,
+        sign,
+        updateMessage,
+        verifying,
+        verified,
       }}
     >
       {children}

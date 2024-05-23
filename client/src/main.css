@@ -11,8 +11,21 @@ body {
 
 /* All users */
 .all-users {
+  max-width: 100%;
+  overflow: auto;
   display: flex;
   margin-bottom: 1rem;
+  padding-bottom: 4px;
+}
+
+.all-users::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.all-users:hover::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
 .single-user {
@@ -141,7 +154,7 @@ body {
 
 .message.self {
   color: white;
-  background: #00bd9b;
+  background: #0191ea;
 }
 
 .message-footer {
@@ -150,6 +163,17 @@ body {
   font-weight: 400;
 }
 
+.message-header {
+  font-size: 12px;
+  align-self: flex-end;
+  font-weight: 400;
+}
+
+.exit {
+  align-self: flex-end;
+  color: white;
+  font-weight: 800;
+}
 /* Chat Input  */
 .chat-input {
   width: 100%;

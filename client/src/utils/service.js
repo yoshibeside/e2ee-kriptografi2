@@ -49,7 +49,7 @@ export const postRequest = async (url, body) => {
   const con_id = localStorage.getItem("con_id");
   const encryptbody = await encrypt(body);
   url = `${url}/${con_id}`;
-  console.log("this is url", url)
+  
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -60,8 +60,6 @@ export const postRequest = async (url, body) => {
   });
 
   const data = await response.json();
-  console.log(data)
-  console.log("this is the key", localStorage.getItem("sharedKeyW"))
   if (!response.ok) {
     let message;
 

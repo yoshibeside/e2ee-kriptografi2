@@ -2,16 +2,22 @@ import {createMessage, getMessages}  from '../lib/firebase.js';
 import encryptResponse from '../lib/encryptresponse.js';
 
 const creatingMessage = async (req, res, next) => {
-  const { chatId, senderId, text } = req.body;
+  const { chatId, senderId, text, signed } = req.body;
 
+  
   if (!chatId || !senderId || !text)
     return res.status(400).json(encryptResponse(req.body.shared, "All fields are required..."));
 
   try {
+    if (signed) {
+      const response = await createMessage({chatId, senderId, text, signed, createdAt: new Date()});
+      const encrypt = encryptResponse(req.body.shared, response)
+      return res.status(200).json({encrypted: encrypt, key: req.body.shared});
+    }
     const response = await createMessage({chatId, senderId, text, createdAt: new Date()});
-
     const encrypt = encryptResponse(req.body.shared, response)
-    res.status(200).json({encrypted: encrypt, key: req.body.shared});
+    return res.status(200).json({encrypted: encrypt, key: req.body.shared});
+    
   } catch (error) {
     next(error)
   }
