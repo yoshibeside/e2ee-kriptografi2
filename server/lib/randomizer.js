@@ -213,7 +213,11 @@ const bbs = (seed, n, iterations) => {
   return result;
 };
 
-export const pseudorandomGenerator = ({ p, q, seed }) => {
+export const pseudorandomGenerator = () => {
+  const p = 211;
+  const q = 223;
+  const seed = 123;
+
   if (!isPrime(p) || !isPrime(q)) {
     return false;
   }
@@ -248,7 +252,8 @@ export const pseudorandomGenerator = ({ p, q, seed }) => {
   p: 11,
   q: 23,
   seed: 3,
-  iterations: 256,
+  iterations: 5,
 });
 
-console.log(result); */
+console.log(result);
+ */
