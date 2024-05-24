@@ -79,6 +79,7 @@ const ModalSchnorr = () => {
               <Form.Control
                 type="file"
                 id="partnerpublickey"
+                accept=".scpub"
                 onChange={handleFileInput}
               />
             </Stack>
