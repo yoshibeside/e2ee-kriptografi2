@@ -45,12 +45,12 @@ export const ChatContextProvider = ({ children, user }) => {
   const [idMessage, setIdMessage] = useState("");
 
   // Helper function to store plain text messages in local storage
-  const storeMessageLocally = (chatId, message, createdAt) => {
+  const storeMessageLocally = (chatId, message, createdAt, senderId) => {
     const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || {};
     if (!chatHistory[chatId]) {
       chatHistory[chatId] = [];
     }
-    chatHistory[chatId].push({ text: message, createdAt });
+    chatHistory[chatId].push({ text: message, createdAt, senderId });
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
   };
 
@@ -194,7 +194,7 @@ export const ChatContextProvider = ({ children, user }) => {
       // Combine messages and override the text portion if timestamps match
       const combinedMessages = decryptedResponse.map((message) => {
         const localMessage = localMessages.find(
-          (local) => local.createdAt === message.createdAt
+          (local) => local.createdAt === message.createdAt && local.senderId === message.senderId
         );
         return localMessage ? { ...message, text: localMessage.text } : message;
       });
@@ -374,7 +374,7 @@ export const ChatContextProvider = ({ children, user }) => {
 
       const { createdAt } = response;
 
-      storeMessageLocally(currentChatId, textMessage, createdAt);
+      storeMessageLocally(currentChatId, textMessage, createdAt, sender._id);
 
       setNewMessage(response);
       setMessages((prev) => [...prev, { ...response, text: textMessage }]);
