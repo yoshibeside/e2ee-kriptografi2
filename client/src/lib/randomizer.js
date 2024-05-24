@@ -213,7 +213,7 @@ const bbs = (seed, n, iterations) => {
   return result;
 };
 
-export const pseudorandomGenerator = ({ p, q, seed, iterations }) => {
+export const pseudorandomGenerator = ({ p, q, seed }) => {
   if (!isPrime(p) || !isPrime(q)) {
     return false;
   }
@@ -225,9 +225,22 @@ export const pseudorandomGenerator = ({ p, q, seed, iterations }) => {
 
   // if seed is not supplied, generate random seed
   const seedValue = BigInt(seed || initializeSeed(n));
-  const randomBits = bbs(seedValue, n, iterations);
+  const randomBits = bbs(seedValue, n, 256);
 
-  return randomBits.join("");
+  // Convert bits to bytes
+  const bytes = [];
+  for (let i = 0; i < randomBits.length; i += 8) {
+    const byte = parseInt(randomBits.slice(i, i + 8).join(""), 2);
+    bytes.push(byte);
+  }
+
+  // Convert bytes to hex string and pad to 2 digits
+  const hexString = bytes
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Return hex string of size 32 bytes
+  return hexString.slice(0, 64);
 };
 
 // Example usage
