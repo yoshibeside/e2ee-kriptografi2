@@ -1,10 +1,10 @@
-import { keccak256 } from "./randomizer.js";
+import { keccak256, pseudorandomGenerator } from "./randomizer.js";
 
 export default class SchnorrSignature {
   constructor(p, q, g) {
-    this.p = p
-    this.q = q
-    this.g = g
+    this.p = p;
+    this.q = q;
+    this.g = g;
   }
 
   mod(n, m) {
@@ -34,26 +34,14 @@ export default class SchnorrSignature {
   }
 
   generateKeys() {
-    const privateKey =
-      BigInt(
-        `0x${crypto
-          .getRandomValues(new Uint8Array(32))
-          .map((byte) => byte.toString(16).padStart(2, "0"))
-          .join("")}`
-      ) % this.q;
+    const privateKey = BigInt(`0x${pseudorandomGenerator()}`) % this.q;
     const publicKey = this.modPow(this.g, privateKey, this.p);
     return { privateKey, publicKey };
   }
 
   sign(privateKey, message) {
-    const k =
-      BigInt(
-        `0x${crypto
-          .getRandomValues(new Uint8Array(32))
-          .map((byte) => byte.toString(16).padStart(2, "0"))
-          .join("")}`
-      ) % this.q;
-    const r = this.modPow(this.g, k, this.p);  
+    const k = BigInt(`0x${pseudorandomGenerator()}`) % this.q;
+    const r = this.modPow(this.g, k, this.p);
     const e = this.hash(`${r.toString(16)}${message}`);
     const s = this.mod(k - privateKey * e, this.q);
     return { r, s };

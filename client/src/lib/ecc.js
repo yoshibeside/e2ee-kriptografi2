@@ -1,3 +1,5 @@
+import { pseudorandomGenerator } from "./randomizer";
+
 class ECC {
   constructor() {
     this.p = BigInt(
@@ -93,12 +95,7 @@ class ECC {
   generatePrivate() {
     let privateKey;
     do {
-      privateKey = BigInt(
-        "0x" +
-          crypto
-            .getRandomValues(new Uint8Array(32))
-            .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "")
-      );
+      privateKey = BigInt("0x" + pseudorandomGenerator());
     } while (privateKey >= this.n || privateKey === 0n);
     return privateKey;
   }
@@ -108,13 +105,7 @@ class ECC {
   }
 
   generateKeys() {
-    const privateKey =
-      BigInt(
-        `0x${crypto
-          .getRandomValues(new Uint8Array(32))
-          .map((byte) => byte.toString(16).padStart(2, "0"))
-          .join("")}`
-      ) % this.n;
+    const privateKey = BigInt(`0x${pseudorandomGenerator()}`) % this.n;
     const publicKey = this.scalarMult(privateKey, this.G);
     return { privateKey, publicKey };
   }
