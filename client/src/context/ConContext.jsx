@@ -1,14 +1,18 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useContext } from "react";
 import { io } from "socket.io-client";
 import ecc from "../lib/ecc.js";
-import { baseUrl, postRequestUnEncrypt, deleteRequest } from "../utils/service.js";
+import { baseUrl, postRequestUnEncrypt, deleteRequest, getRequest } from "../utils/service.js";
+import { AuthContext } from "./AuthContext.jsx";
 
 export const ConContext = createContext();
 
-export const ConContextProvider = ({ children, user }) => {
+export const ConContextProvider = ({ children }) => {
+
+	const {user} = useContext(AuthContext);
 
     const [socket, setSocket] = useState(null);
     const [privateKey, setPrivateKey] = useState(null);
+	const [sharedKey, setSharedKey] = useState(false);
 
     // initialize socket
     useEffect(() => {
@@ -33,10 +37,11 @@ export const ConContextProvider = ({ children, user }) => {
         makeConnection();
         
         return () => {
+			console.log("disconnecting")
             newSocket.disconnect();
             deleteConnection();
         };
-    }, [user]);
+    }, []);
 
     useEffect(() => {
         if (!socket) return;
@@ -48,29 +53,30 @@ export const ConContextProvider = ({ children, user }) => {
     }, [socket])
 
     useEffect(() => {
-        if (!socket || !privateKey) return;
+        if (!socket || !privateKey || !user) return;
 
-        socket.on("receivePG", () => {
-            const publicKey = ecc.generatePublic(privateKey)
-            socket.emit("getAClient", {publicKey: [publicKey[0].toString(), publicKey[1].toString()]})
-        })
+		const publicKey = ecc.generatePublic(privateKey)
+		socket.emit("getAClient", {publicKey: [publicKey[0].toString(), publicKey[1].toString()]})
 
         socket.on("receiveB", (data) => {
             const publicKey = [BigInt(data.publicKey[0]), BigInt(data.publicKey[1])]
             const sharedKey = ecc.scalarMult(privateKey, publicKey)
             localStorage.setItem("sharedKey", sharedKey.join(""))
+			setSharedKey(true)
         });
 
         return () => {
           socket.off("receivePG");
           socket.off("receiveB");
+		  setSharedKey(false)
         };
-    }, [privateKey])
+    }, [privateKey, socket, user])
 
     return (
         <ConContext.Provider
           value={{
-            socket
+            socket,
+			sharedKey
           }}
         >
           {children}

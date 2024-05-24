@@ -3,11 +3,13 @@ import { createContext } from "react";
 import { baseUrl, getRequest, postRequest } from "../utils/service";
 import { ConContext } from "./ConContext";
 import { encryptMessage, decryptMessage } from "../lib/ecc_helper.js";
+import { encrypt, decrypt } from "../lib/als_helper.js";
 import SchnorrSignature from "../lib/schnorr.js";
 
 export const ChatContext = createContext();
 
 export const ChatContextProvider = ({ children, user }) => {
+  const {sharedKey, socket} = useContext(ConContext);
   const [userChats, setUserChats] = useState(null);
   const [isUserChatsLoading, setIsUserChatsLoading] = useState(false);
   const [userChatsError, setUserChatsError] = useState(null);
@@ -25,7 +27,6 @@ export const ChatContextProvider = ({ children, user }) => {
   const [text, setText] = useState("");
   const [chatId, setChatId] = useState("");
   const [signature, setSignature] = useState({r: null, s: null})
-  const { socket } = useContext(ConContext);
   const [Schnorr, setSchnorr] = useState(null);
 
   const [showModal, setShowModal] = useState({
@@ -69,7 +70,6 @@ export const ChatContextProvider = ({ children, user }) => {
       if (response.error) {
         return setMessagesError(response.error);
       }
-      console.log("loading", response)
       setSchnorr(new SchnorrSignature(BigInt(response.p), BigInt(response.q), BigInt(response.alpha)));
     }
     getParams();
@@ -78,17 +78,19 @@ export const ChatContextProvider = ({ children, user }) => {
 
   // set online users
   useEffect(() => {
-    if (socket === null) return;
-
-    socket.emit("addNewUser", user?._id);
+    const key = localStorage.getItem("sharedKey")
+    if (!socket || !user?._id || !key || !sharedKey ) return;
+    socket.emit("addNewUser", encrypt({ encrypted: user._id }, key));
     socket.on("getUsers", (res) => {
-      setOnlineUsers(res);
+      const response = decrypt(res.encrypted, localStorage.getItem("sharedKey"))
+      const objects = JSON.parse(response)
+      setOnlineUsers(objects);
     });
 
     return () => {
       socket.off("getUsers");
     };
-  }, [socket]);
+  }, [sharedKey, socket, user]);
 
   // send message
   useEffect(() => {
@@ -96,7 +98,7 @@ export const ChatContextProvider = ({ children, user }) => {
 
     const recipientId = currentChat?.members.find((id) => id !== user?._id);
 
-    socket.emit("sendMessage", { ...newMessage, recipientId });
+    socket.emit("sendMessage", encrypt({ ...newMessage, recipientId }, localStorage.getItem("sharedKey")));
   }, [newMessage]);
 
   // receive message and notifications
@@ -104,9 +106,10 @@ export const ChatContextProvider = ({ children, user }) => {
     if (socket === null) return;
 
     socket.on("getMessage", (res) => {
-      if (currentChat?._id !== res.chatId) return;
+      const response = decrypt(res.encrypted, localStorage.getItem("sharedKey"))
+      if (currentChat?._id !== response.chatId) return;
 
-      const encryptedMessageString = res.text;
+      const encryptedMessageString = response.text;
       const encryptedChunks = JSON.parse(encryptedMessageString).map(
         (chunk) => ({
           kG: chunk.kG.map((coord) => BigInt(`0x${coord}`)),
@@ -119,16 +122,17 @@ export const ChatContextProvider = ({ children, user }) => {
         encryptedChunks
       );
 
-      setMessages((prev) => [...prev, { ...res, text: decryptedMessage }]);
+        setMessages((prev) => [...prev, { ...response, text: decryptedMessage }]);
     });
 
     socket.on("getNotification", (res) => {
-      const isChatOpen = currentChat?.members.some((Id) => Id === res.senderId);
+      const response = decrypt(res.encrypted, localStorage.getItem("sharedKey"))
+      const isChatOpen = currentChat?.members.some((Id) => Id === response.senderId);
 
       if (isChatOpen) {
-        setNotifications((prev) => [{ ...res, isRead: true }, ...prev]);
+        setNotifications((prev) => [{ ...response, isRead: true }, ...prev]);
       } else {
-        setNotifications((prev) => [res, ...prev]);
+        setNotifications((prev) => [response, ...prev]);
       }
     });
 
@@ -316,15 +320,6 @@ export const ChatContextProvider = ({ children, user }) => {
     },
     [keys]
   );
-
-  useEffect(() => {
-    console.log("the current chat", currentChat);
-  }, [currentChat]);
-
-  useEffect(() => {
-    if (keys.length === 0) return;
-    console.log(keys);
-  }, [keys]);
 
   const updateMessage = useCallback((textMessage, id)=> {
     setText(textMessage);
