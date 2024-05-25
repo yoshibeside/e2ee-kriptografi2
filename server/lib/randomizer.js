@@ -216,7 +216,7 @@ const bbs = (seed, n, iterations) => {
 export const pseudorandomGenerator = () => {
   const p = 211;
   const q = 223;
-  const seed = 123;
+  const seed = null;
 
   if (!isPrime(p) || !isPrime(q)) {
     return false;
