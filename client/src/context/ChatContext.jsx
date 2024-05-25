@@ -118,7 +118,7 @@ export const ChatContextProvider = ({ children, user }) => {
       );
 
       const decryptedMessage = decryptMessage(
-        keys[0].privateKey,
+        getCurrentKeys().privateKey,
         encryptedChunks
       );
 
@@ -148,17 +148,21 @@ export const ChatContextProvider = ({ children, user }) => {
       if (keys.find((k) => k.chatId === currentChat?._id)) {
         return;
       } else {
-        setShowModal({
-          bool: true,
-          sender: user._id,
-          receiver: currentChat.members.find((m) => m !== user._id),
-        });
-        setIsMessagesLoading(true);
+        insertKeys(user._id, currentChat.members.find((m) => m !== user._id));
       }
+      setIsMessagesLoading(true);
     };
 
     getKeys();
-  }, [currentChat]);
+  }, [currentChat, user]);
+
+  const insertKeys = useCallback((userId, receiverId)=> {
+    setShowModal({
+      bool: true,
+      sender: userId,
+      receiver: receiverId,
+    })
+  },[])
 
   useEffect(() => {
     if (!currentChat) return;
@@ -169,8 +173,6 @@ export const ChatContextProvider = ({ children, user }) => {
       const response = await getRequest(
         `${baseUrl}/messages/${currentChat?._id}`
       );
-
-      setIsMessagesLoading(false);
 
       if (response.error) {
         return setMessagesError(response.error);
@@ -186,7 +188,7 @@ export const ChatContextProvider = ({ children, user }) => {
           })
         );
         const decryptedMessage = decryptMessage(
-          keys[0].privateKey,
+          getCurrentKeys().privateKey,
           encryptedChunks
         );
         return {
@@ -208,6 +210,7 @@ export const ChatContextProvider = ({ children, user }) => {
       );
 
       setMessages(combinedMessages);
+      setIsMessagesLoading(false);
     };
 
     getMessages();
@@ -266,6 +269,10 @@ export const ChatContextProvider = ({ children, user }) => {
     getUserChats();
   }, [user, notifications]);
 
+  const getCurrentKeys = () => {
+    return keys.find((k) => k.chatId === currentChat?._id);
+  }
+
   const updateCurrentChat = useCallback(async (chat) => {
     setCurrentChat(chat);
   }, []);
@@ -312,11 +319,23 @@ export const ChatContextProvider = ({ children, user }) => {
 
   const addKey = useCallback(
     (privateKey, partnerPublicKey, currentChat) => {
-      setKeys((prev) => [
-        ...prev,
-        { chatId: currentChat._id, privateKey, partnerPublicKey },
-      ]);
+      setIsMessagesLoading(true); 
+      setKeys((prev) => {
+        const updatedKeys = prev.map(key => 
+          key.chatId === currentChat._id 
+            ? { ...key, privateKey, partnerPublicKey } 
+            : key
+        );
+        // Check if the chatId was found and updated
+        const chatIdExists = updatedKeys.some(key => key.chatId === currentChat._id);
+        if (!chatIdExists) {
+          return [...prev, { privateKey, partnerPublicKey, chatId: currentChat._id }];
+        } else {
+          return updatedKeys;
+        }
+      });
       setShowModal({ bool: false, sender: null, receiver: null });
+      console.log("LEWAT")
     },
     [keys]
   );
@@ -333,7 +352,7 @@ export const ChatContextProvider = ({ children, user }) => {
       // Encrypt message here
       const encryptedChunks = encryptMessage(
         textMessage,
-        keys[0].partnerPublicKey
+        getCurrentKeys().partnerPublicKey
       );
 
       const encryptedMessageString = JSON.stringify(
@@ -483,6 +502,8 @@ export const ChatContextProvider = ({ children, user }) => {
         verifying,
         verified,
         Schnorr,
+        insertKeys,
+        isMessagesLoading,
       }}
     >
       {children}

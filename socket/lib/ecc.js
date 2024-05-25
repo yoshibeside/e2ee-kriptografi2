@@ -1,4 +1,4 @@
-import { pseudorandomGenerator } from "../../client/src/lib/randomizer";
+import { pseudorandomGenerator } from "../../client/src/lib/randomizer.js";
 
 class ECC {
   constructor() {
